@@ -7,10 +7,9 @@ public class Order {
 
     public Order(String id, String deliveryTime) {
         this.id = id;
-        // accepts "HH:MM" or minutes as string
-        if (deliveryTime == null) {
-            this.deliveryTime = 0;
-        } else if (deliveryTime.contains(":")) {
+
+        // Convert "HH:MM" → minutes
+        if (deliveryTime.contains(":")) {
             String[] parts = deliveryTime.split(":");
             int HH = Integer.parseInt(parts[0]);
             int MM = Integer.parseInt(parts[1]);

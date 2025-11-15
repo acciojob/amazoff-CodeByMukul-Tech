@@ -1,81 +1,67 @@
 package com.driver;
 
 import java.util.*;
-
 import org.springframework.stereotype.Repository;
 
 @Repository
 public class OrderRepository {
 
-    private final HashMap<String, Order> orderMap;
-    private final HashMap<String, DeliveryPartner> partnerMap;
-    private final HashMap<String, HashSet<String>> partnerToOrderMap;
-    private final HashMap<String, String> orderToPartnerMap;
+    private final HashMap<String, Order> orderMap = new HashMap<>();
+    private final HashMap<String, DeliveryPartner> partnerMap = new HashMap<>();
+    private final HashMap<String, HashSet<String>> partnerToOrderMap = new HashMap<>();
+    private final HashMap<String, String> orderToPartnerMap = new HashMap<>();
 
-    public OrderRepository(){
-        this.orderMap = new HashMap<>();
-        this.partnerMap = new HashMap<>();
-        this.partnerToOrderMap = new HashMap<>();
-        this.orderToPartnerMap = new HashMap<>();
-    }
-
-    public void saveOrder(Order order){
+    public void addOrder(Order order){
         orderMap.put(order.getId(), order);
     }
 
-    public void savePartner(String partnerId){
-        DeliveryPartner deliveryPartner = new DeliveryPartner(partnerId);
-        partnerMap.put(partnerId, deliveryPartner);
+    public void addPartner(String partnerId){
+        partnerMap.put(partnerId, new DeliveryPartner(partnerId));
     }
 
-    public void saveOrderPartnerMap(String orderId, String partnerId){
-        if(orderMap.containsKey(orderId) && partnerMap.containsKey(partnerId)){
-            // if order already assigned to another partner, remove that mapping first
+    public void addOrderPartnerPair(String orderId, String partnerId){
+        if(orderMap.containsKey(orderId) && partnerMap.containsKey(partnerId)) {
+
+            // If previously assigned → remove old mapping
             if(orderToPartnerMap.containsKey(orderId)){
                 String prevPartner = orderToPartnerMap.get(orderId);
-                if(partnerToOrderMap.containsKey(prevPartner)){
-                    partnerToOrderMap.get(prevPartner).remove(orderId);
-                    DeliveryPartner dp = partnerMap.get(prevPartner);
-                    if(dp != null) dp.decrementOrders();
-                }
+                partnerToOrderMap.get(prevPartner).remove(orderId);
+                partnerMap.get(prevPartner).decrementOrders();
             }
 
             orderToPartnerMap.put(orderId, partnerId);
             partnerToOrderMap.putIfAbsent(partnerId, new HashSet<>());
+
             boolean added = partnerToOrderMap.get(partnerId).add(orderId);
             if(added){
-                DeliveryPartner dp = partnerMap.get(partnerId);
-                if(dp != null) dp.incrementOrders();
+                partnerMap.get(partnerId).incrementOrders();
             }
         }
     }
 
-    public Order findOrderById(String orderId){
-        return orderMap.getOrDefault(orderId, null);
+    public Order getOrderById(String orderId){
+        return orderMap.get(orderId);
     }
 
-    public DeliveryPartner findPartnerById(String partnerId){
-        return partnerMap.getOrDefault(partnerId, null);
+    public DeliveryPartner getPartnerById(String partnerId){
+        return partnerMap.get(partnerId);
     }
 
-    public Integer findOrderCountByPartnerId(String partnerId){
-        if(!partnerToOrderMap.containsKey(partnerId)) return 0;
-        return partnerToOrderMap.get(partnerId).size();
+    public Integer getOrderCountByPartnerId(String partnerId){
+        return partnerToOrderMap.getOrDefault(partnerId, new HashSet<>()).size();
     }
 
-    public List<String> findOrdersByPartnerId(String partnerId){
-        if(!partnerToOrderMap.containsKey(partnerId)) return new ArrayList<>();
-        return new ArrayList<>(partnerToOrderMap.get(partnerId));
+    public List<String> getOrdersByPartnerId(String partnerId){
+        return new ArrayList<>(partnerToOrderMap.getOrDefault(partnerId, new HashSet<>()));
     }
 
-    public List<String> findAllOrders(){
+    public List<String> getAllOrders(){
         return new ArrayList<>(orderMap.keySet());
     }
 
     public void deletePartner(String partnerId){
         if(!partnerMap.containsKey(partnerId)) return;
 
-        // remove partner's orders assignments (make them unassigned)
         if(partnerToOrderMap.containsKey(partnerId)){
             for(String orderId : partnerToOrderMap.get(partnerId)){
                 orderToPartnerMap.remove(orderId);
@@ -83,7 +69,6 @@ public class OrderRepository {
             partnerToOrderMap.remove(partnerId);
         }
 
-        // finally remove the partner
         partnerMap.remove(partnerId);
     }
 
@@ -92,57 +77,53 @@ public class OrderRepository {
 
         if(orderToPartnerMap.containsKey(orderId)){
             String partnerId = orderToPartnerMap.get(orderId);
-            orderToPartnerMap.remove(orderId);
-            if(partnerToOrderMap.containsKey(partnerId)){
-                boolean removed = partnerToOrderMap.get(partnerId).remove(orderId);
-                if(removed){
-                    DeliveryPartner dp = partnerMap.get(partnerId);
-                    if(dp != null) dp.decrementOrders();
-                }
-                // if partner now has no orders, you may keep empty set or remove the entry
-                if(partnerToOrderMap.get(partnerId).isEmpty()){
-                    partnerToOrderMap.remove(partnerId);
-                }
+            partnerToOrderMap.get(partnerId).remove(orderId);
+            partnerMap.get(partnerId).decrementOrders();
+
+            if(partnerToOrderMap.get(partnerId).isEmpty()){
+                partnerToOrderMap.remove(partnerId);
             }
+
+            orderToPartnerMap.remove(orderId);
         }
+
         orderMap.remove(orderId);
     }
 
-    public Integer findCountOfUnassignedOrders(){
+    public Integer getCountOfUnassignedOrders(){
         return orderMap.size() - orderToPartnerMap.size();
     }
 
-    // Accepts "HH:MM" or minutes string. Returns count of partner's orders with deliveryTime > given time
-    public Integer findOrdersLeftAfterGivenTimeByPartnerId(String timeString, String partnerId){
+    public Integer getOrdersLeftAfterGivenTimeByPartnerId(String time, String partnerId){
         if(!partnerToOrderMap.containsKey(partnerId)) return 0;
-        int timelimit;
-        if(timeString.contains(":")){
-            String[] parts = timeString.split(":");
-            int HH = Integer.parseInt(parts[0]);
-            int MM = Integer.parseInt(parts[1]);
-            timelimit = HH * 60 + MM;
-        } else {
-            timelimit = Integer.parseInt(timeString);
-        }
+
+        String[] parts = time.split(":");
+        int HH = Integer.parseInt(parts[0]);
+        int MM = Integer.parseInt(parts[1]);
+        int givenTime = HH * 60 + MM;
 
         int count = 0;
+
         for(String orderId : partnerToOrderMap.get(partnerId)){
-            Order order = orderMap.get(orderId);
-            if(order != null && order.getDeliveryTime() > timelimit) count++;
+            if(orderMap.get(orderId).getDeliveryTime() > givenTime){
+                count++;
+            }
         }
+
         return count;
     }
 
-    // Returns last delivery time as "HH:MM" (00 padded)
-    public String findLastDeliveryTimeByPartnerId(String partnerId){
-        if(!partnerToOrderMap.containsKey(partnerId) || partnerToOrderMap.get(partnerId).isEmpty()) return "";
-        int lasttime = 0;
+    public String getLastDeliveryTimeByPartnerId(String partnerId){
+        if(!partnerToOrderMap.containsKey(partnerId)) return "";
+
+        int latest = 0;
+
         for(String orderId : partnerToOrderMap.get(partnerId)){
-            Order order = orderMap.get(orderId);
-            if(order != null) lasttime = Math.max(lasttime, order.getDeliveryTime());
+            latest = Math.max(latest, orderMap.get(orderId).getDeliveryTime());
         }
-        int HH = lasttime / 60;
-        int MM = lasttime % 60;
+
+        int HH = latest / 60;
+        int MM = latest % 60;
         return String.format("%02d:%02d", HH, MM);
     }
 }
