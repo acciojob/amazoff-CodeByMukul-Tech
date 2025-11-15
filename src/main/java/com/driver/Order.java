@@ -3,17 +3,25 @@ package com.driver;
 public class Order {
 
     private String id;
-    private int deliveryTime;
+    private int deliveryTime; // in minutes
 
     public Order(String id, String deliveryTime) {
+        this.id = id;
+        this.deliveryTime = convertTimeToMinutes(deliveryTime);
+    }
 
-        // The deliveryTime has to converted from string to int and then stored in the attribute
-        //deliveryTime  = HH*60 + MM
+    private int convertTimeToMinutes(String time) {
+        String[] parts = time.split(":"); // split HH and MM
+        int hh = Integer.parseInt(parts[0]);
+        int mm = Integer.parseInt(parts[1]);
+        return hh * 60 + mm;
     }
 
     public String getId() {
         return id;
     }
 
-    public int getDeliveryTime() {return deliveryTime;}
+    public int getDeliveryTime() {
+        return deliveryTime;
+    }
 }
