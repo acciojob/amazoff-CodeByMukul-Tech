@@ -1,6 +1,7 @@
 package com.driver;
 
-import java.util.List;
+import java.util.*;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -8,38 +9,38 @@ import org.springframework.stereotype.Service;
 public class OrderService {
 
     @Autowired
-    OrderRepository orderRepository;
+    OrderRepository orderRepository = new OrderRepository();
 
     public void addOrder(Order order){
-        orderRepository.addOrder(order);
+        orderRepository.saveOrder(order);
     }
 
     public void addPartner(String partnerId){
-        orderRepository.addPartner(partnerId);
+        orderRepository.savePartner(partnerId);
     }
 
-    public void addOrderPartnerPair(String orderId, String partnerId){
-        orderRepository.addOrderPartnerPair(orderId, partnerId);
+    public void createOrderPartnerPair(String orderId, String partnerId){
+        orderRepository.saveOrderPartnerMap(orderId, partnerId);
     }
 
     public Order getOrderById(String orderId){
-        return orderRepository.getOrderById(orderId);
+        return orderRepository.findOrderById(orderId);
     }
 
     public DeliveryPartner getPartnerById(String partnerId){
-        return orderRepository.getPartnerById(partnerId);
+        return orderRepository.findPartnerById(partnerId);
     }
 
     public Integer getOrderCountByPartnerId(String partnerId){
-        return orderRepository.getOrderCountByPartnerId(partnerId);
+        return orderRepository.findOrderCountByPartnerId(partnerId);
     }
 
     public List<String> getOrdersByPartnerId(String partnerId){
-        return orderRepository.getOrdersByPartnerId(partnerId);
+        return orderRepository.findOrdersByPartnerId(partnerId);
     }
 
     public List<String> getAllOrders(){
-        return orderRepository.getAllOrders();
+        return orderRepository.findAllOrders();
     }
 
     public void deletePartner(String partnerId){
@@ -51,14 +52,14 @@ public class OrderService {
     }
 
     public Integer getCountOfUnassignedOrders(){
-        return orderRepository.getCountOfUnassignedOrders();
+        return orderRepository.findCountOfUnassignedOrders();
     }
 
     public Integer getOrdersLeftAfterGivenTimeByPartnerId(String time, String partnerId){
-        return orderRepository.getOrdersLeftAfterGivenTimeByPartnerId(time, partnerId);
+        return orderRepository.findOrdersLeftAfterGivenTimeByPartnerId(time, partnerId);
     }
 
     public String getLastDeliveryTimeByPartnerId(String partnerId){
-        return orderRepository.getLastDeliveryTimeByPartnerId(partnerId);
+        return orderRepository.findLastDeliveryTimeByPartnerId(partnerId);
     }
 }
