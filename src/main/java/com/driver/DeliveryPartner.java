@@ -21,4 +21,12 @@ public class DeliveryPartner {
     public void setNumberOfOrders(Integer numberOfOrders) {
         this.numberOfOrders = numberOfOrders;
     }
+
+    public void incrementOrders() {
+        this.numberOfOrders++;
+    }
+
+    public void decrementOrders() {
+        if (this.numberOfOrders > 0) this.numberOfOrders--;
+    }
 }
